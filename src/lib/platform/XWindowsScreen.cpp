@@ -93,6 +93,18 @@ XWindowsScreen::XWindowsScreen(
     m_xkb(false),
     m_xi2detected(false),
     m_xrandr(false),
+    m_atomXdndEnter(None),
+    m_atomXdndPosition(None),
+    m_atomXdndStatus(None),
+    m_atomXdndDrop(None),
+    m_atomXdndFinished(None),
+    m_atomXdndTypeList(None),
+    m_atomXdndActionCopy(None),
+    m_atomXdndSelection(None),
+    m_atomText(None),
+    m_atomUtf8String(None),
+    m_xdndDragActive(false),
+    m_xdndSourceWindow(None),
     m_events(events)
 {
     m_impl = impl;
@@ -152,6 +164,18 @@ XWindowsScreen::XWindowsScreen(
 	for (ClipboardID id = 0; id < kClipboardEnd; ++id) {
         m_clipboard[id] = new XWindowsClipboard(m_impl, m_display, m_window, id);
 	}
+
+	// initialize XDND (X11 Drag and Drop) atoms for drag-and-drop support
+	m_atomXdndEnter      = m_impl->XInternAtom(m_display, "XdndEnter", False);
+	m_atomXdndPosition   = m_impl->XInternAtom(m_display, "XdndPosition", False);
+	m_atomXdndStatus     = m_impl->XInternAtom(m_display, "XdndStatus", False);
+	m_atomXdndDrop       = m_impl->XInternAtom(m_display, "XdndDrop", False);
+	m_atomXdndFinished   = m_impl->XInternAtom(m_display, "XdndFinished", False);
+	m_atomXdndTypeList   = m_impl->XInternAtom(m_display, "XdndTypeList", False);
+	m_atomXdndActionCopy = m_impl->XInternAtom(m_display, "XdndActionCopy", False);
+	m_atomXdndSelection  = m_impl->XInternAtom(m_display, "XdndSelection", False);
+	m_atomText           = m_impl->XInternAtom(m_display, "text/plain", False);
+	m_atomUtf8String     = m_impl->XInternAtom(m_display, "text/uri-list", False);
 
 	// install event handlers
 	m_events->add_handler(EventType::SYSTEM, m_events->getSystemTarget(),
@@ -1294,6 +1318,19 @@ XWindowsScreen::handle_system_event(const Event& event)
 		}
 		break;
 
+	case ClientMessage:
+		// Handle XDND (X11 Drag and Drop) protocol messages
+		if (xevent->xclient.message_type == m_atomXdndEnter) {
+			handle_xdnd_enter(&xevent->xclient);
+		}
+		else if (xevent->xclient.message_type == m_atomXdndPosition) {
+			handle_xdnd_position(&xevent->xclient);
+		}
+		else if (xevent->xclient.message_type == m_atomXdndDrop) {
+			handle_xdnd_drop(&xevent->xclient);
+		}
+		break;
+
 	case DestroyNotify:
 		// looks like one of the windows that requested a clipboard
 		// transfer has gone bye-bye.
@@ -2051,4 +2088,129 @@ XWindowsScreen::selectXIRawMotion()
 	free(mask.mask);
 }
 
+//
+// XDND (X11 Drag and Drop) implementation for Linux drag-and-drop support
+//
+
+void
+XWindowsScreen::handle_xdnd_enter(const XClientMessageEvent* event)
+{
+	// Drag source announces it's entering our window with draggable data
+	m_xdndDragActive = true;
+	m_xdndSourceWindow = static_cast<Window>(event->data.l[0]);
+	
+	LOG_DEBUG2("XDND Enter from window 0x%lx", m_xdndSourceWindow);
+}
+
+void
+XWindowsScreen::handle_xdnd_position(const XClientMessageEvent* event)
+{
+	// Drag source is announcing mouse position over our window
+	if (!m_xdndDragActive) {
+		return;
+	}
+	
+	LOG_DEBUG3("XDND Position: x=%ld, y=%ld", 
+		event->data.l[2] >> 16, event->data.l[2] & 0xFFFF);
+	
+	// Send XdndStatus response to indicate we accept drops
+	send_xdnd_status(m_xdndSourceWindow, true);
+}
+
+void
+XWindowsScreen::handle_xdnd_drop(const XClientMessageEvent* event)
+{
+	// User dropped files on us - request the data
+	if (!m_xdndDragActive) {
+		return;
+	}
+	
+	LOG_DEBUG2("XDND Drop from window 0x%lx", m_xdndSourceWindow);
+	
+	// Request the file list data (text/uri-list format)
+	request_xdnd_data(m_atomUtf8String);
+}
+
+void
+XWindowsScreen::send_xdnd_status(Window source, bool accepted)
+{
+	// Send XdndStatus to indicate we accept drops
+	XClientMessageEvent msg;
+	msg.type = ClientMessage;
+	msg.display = m_display;
+	msg.window = source;
+	msg.message_type = m_atomXdndStatus;
+	msg.format = 32;
+	msg.data.l[0] = static_cast<long>(m_window);
+	msg.data.l[1] = (accepted ? 1 : 0); // accept drop
+	msg.data.l[2] = 0; // x, y unused
+	msg.data.l[3] = 0;
+	msg.data.l[4] = static_cast<long>(m_atomXdndActionCopy);
+	
+	XSendEvent(m_display, source, False, NoEventMask, (XEvent*)&msg);
+	XFlush(m_display);
+}
+
+void
+XWindowsScreen::request_xdnd_data(Atom type)
+{
+	// Request the dragged data from the source
+	XConvertSelection(m_display, m_atomXdndSelection, type,
+				   m_atomXdndSelection, m_window, CurrentTime);
+}
+
+std::string
+XWindowsScreen::convert_uri_to_path(const std::string& uri)
+{
+	// Convert file:// URIs to file paths and decode URL encoding
+	std::string path = uri;
+	
+	// Handle file:// protocol
+	if (path.substr(0, 7) == "file://") {
+		path = path.substr(7);
+		
+		// Handle file:///absolute/path (3 slashes)
+		// We keep the absolute path with single slash
+	}
+	
+	// Decode URL encoding (%xx format)
+	size_t pos = 0;
+	while ((pos = path.find('%', pos)) != std::string::npos && pos + 2 < path.size()) {
+		std::string hex = path.substr(pos + 1, 2);
+		char* endptr;
+		int charCode = std::strtol(hex.c_str(), &endptr, 16);
+		
+		if (endptr == hex.c_str() + 2) {
+			// Valid hex sequence
+			path.replace(pos, 3, 1, static_cast<char>(charCode));
+		}
+		pos++;
+	}
+	
+	// Handle \r\n line endings from some file managers
+	if (!path.empty() && path.back() == '\r') {
+		path.pop_back();
+	}
+	
+	return path;
+}
+
+bool
+XWindowsScreen::isDraggingStarted()
+{
+	// Override parent implementation to check XDND drag state
+	if (m_isPrimary) {
+		return m_xdndDragActive;
+	}
+	return false;
+}
+
+std::string&
+XWindowsScreen::getDraggingFilename()
+{
+	// Return the dragging filename accumulated from XDND data
+	return m_xdndDragFilenames;
+}
+
 } // namespace inputleap
+

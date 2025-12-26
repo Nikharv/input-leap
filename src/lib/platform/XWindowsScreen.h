@@ -86,6 +86,10 @@ public:
     void setOptions(const OptionsList& options) override;
     void setSequenceNumber(std::uint32_t) override;
     bool isPrimary() const override;
+    
+    // Drag and drop support overrides
+    bool isDraggingStarted() override;
+    std::string& getDraggingFilename() override;
 
 protected:
     // IPlatformScreen overrides
@@ -137,6 +141,14 @@ private:
     void onMousePress(const XButtonEvent&);
     void onMouseRelease(const XButtonEvent&);
     void onMouseMove(const XMotionEvent&);
+
+    // XDND (X11 Drag and Drop) support for Linux drag-and-drop
+    void handle_xdnd_enter(const XClientMessageEvent* event);
+    void handle_xdnd_position(const XClientMessageEvent* event);
+    void handle_xdnd_drop(const XClientMessageEvent* event);
+    void send_xdnd_status(Window source, bool accepted);
+    void request_xdnd_data(Atom type);
+    std::string convert_uri_to_path(const std::string& uri);
 
     // Returns the number of scroll events needed after the current delta has
     // been taken into account
@@ -258,6 +270,22 @@ private:
     // XRandR extension stuff
     bool m_xrandr;
     int m_xrandrEventBase;
+
+    // XDND (X11 Drag and Drop) support
+    Atom m_atomXdndEnter;
+    Atom m_atomXdndPosition;
+    Atom m_atomXdndStatus;
+    Atom m_atomXdndDrop;
+    Atom m_atomXdndFinished;
+    Atom m_atomXdndTypeList;
+    Atom m_atomXdndActionCopy;
+    Atom m_atomXdndSelection;
+    Atom m_atomText;
+    Atom m_atomUtf8String;
+    
+    bool m_xdndDragActive;
+    Window m_xdndSourceWindow;
+    std::string m_xdndDragFilenames;
 
     IEventQueue* m_events;
     inputleap::KeyMap m_keyMap;
