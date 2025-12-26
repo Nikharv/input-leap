@@ -146,7 +146,9 @@ private:
     void handle_xdnd_enter(const XClientMessageEvent* event);
     void handle_xdnd_position(const XClientMessageEvent* event);
     void handle_xdnd_drop(const XClientMessageEvent* event);
+    void handle_xdnd_selection_notify(const XSelectionEvent* event);
     void send_xdnd_status(Window source, bool accepted);
+    void send_xdnd_finished(Window source);
     void request_xdnd_data(Atom type);
     std::string convert_uri_to_path(const std::string& uri);
 

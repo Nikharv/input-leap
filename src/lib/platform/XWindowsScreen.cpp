@@ -37,6 +37,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <algorithm>
+#include <sstream>
 
 #define SCROLL_LOCK_EXCLUDE_MASK 0xDFFF
 // To ignore scroll lock state for hotkeys, as it is used for alternate keyboard layout indication
@@ -1281,9 +1282,15 @@ XWindowsScreen::handle_system_event(const Event& event)
 		break;
 
 	case SelectionNotify:
-		// notification of selection transferred.  we shouldn't
-		// get this here because we handle them in the selection
-		// retrieval methods.  we'll just delete the property
+		// Check if this is XDND file data
+		if (xevent->xselection.selection == m_atomXdndSelection) {
+			handle_xdnd_selection_notify(&xevent->xselection);
+			return;
+		}
+		
+		// Otherwise, notification of clipboard selection transferred.
+		// We shouldn't get this here because we handle them in the 
+		// selection retrieval methods. We'll just delete the property
 		// with the data (satisfying the usual ICCCM protocol).
 		if (xevent->xselection.property != None) {
             m_impl->XDeleteProperty(m_display,
@@ -2157,6 +2164,98 @@ XWindowsScreen::request_xdnd_data(Atom type)
 	// Request the dragged data from the source
 	XConvertSelection(m_display, m_atomXdndSelection, type,
 				   m_atomXdndSelection, m_window, CurrentTime);
+}
+
+void
+XWindowsScreen::handle_xdnd_selection_notify(const XSelectionEvent* event)
+{
+	// File data has arrived from drag source
+	if (event->property == None) {
+		LOG_WARN("XDND: Selection conversion failed");
+		m_xdndDragActive = false;
+		return;
+	}
+	
+	// Get the file data from the property
+	Atom actualType;
+	int actualFormat;
+	unsigned long nitems, bytesAfter;
+	unsigned char* data = nullptr;
+	
+	// Read the property containing the file URIs
+	int status = XGetWindowProperty(m_display, event->requestor,
+								   event->property, 0, (~0L), False,
+								   AnyPropertyType, &actualType,
+								   &actualFormat, &nitems, &bytesAfter,
+								   &data);
+	
+	if (status != Success || !data) {
+		LOG_WARN("XDND: Failed to get window property");
+		m_xdndDragActive = false;
+		return;
+	}
+	
+	// Convert raw data to string
+	std::string rawData(reinterpret_cast<char*>(data), nitems);
+	XFree(data);
+	
+	LOG_DEBUG2("XDND: Received data: %s", rawData.c_str());
+	
+	// Parse file URIs (newline or null-separated)
+	std::string filenames;
+	std::istringstream iss(rawData);
+	std::string line;
+	
+	while (std::getline(iss, line)) {
+		// Trim whitespace and handle different line endings
+		if (!line.empty() && line.back() == '\r') {
+			line.pop_back();
+		}
+		if (!line.empty()) {
+			// Convert URI to path
+			std::string path = convert_uri_to_path(line);
+			if (!path.empty()) {
+				if (!filenames.empty()) {
+					filenames += ",";  // Use comma-separated format for multiple files
+				}
+				filenames += path;
+				LOG_DEBUG2("XDND: Converted URI to path: %s", path.c_str());
+			}
+		}
+	}
+	
+	// Store the filenames for the server to pick up
+	m_xdndDragFilenames = filenames;
+	
+	LOG_DEBUG("XDND: Final filename list: %s", m_xdndDragFilenames.c_str());
+	
+	// Send XdndFinished to indicate we processed the drop
+	send_xdnd_finished(m_xdndSourceWindow);
+	
+	// Clear the drag state (will be handled by server after file transfer)
+	// Don't set m_xdndDragActive = false yet; server needs isDraggingStarted() to return true
+}
+
+void
+XWindowsScreen::send_xdnd_finished(Window source)
+{
+	// Notify source that drop was processed
+	XClientMessageEvent msg;
+	msg.type = ClientMessage;
+	msg.display = m_display;
+	msg.window = source;
+	msg.message_type = m_atomXdndFinished;
+	msg.format = 32;
+	msg.data.l[0] = static_cast<long>(m_window);
+	msg.data.l[1] = 1;  // Drop successful
+	msg.data.l[2] = static_cast<long>(m_atomXdndActionCopy);
+	msg.data.l[3] = 0;
+	msg.data.l[4] = 0;
+	
+	XSendEvent(m_display, source, False, NoEventMask, (XEvent*)&msg);
+	XFlush(m_display);
+	
+	LOG_DEBUG2("XDND: Sent XdndFinished");
 }
 
 std::string
