@@ -791,16 +791,32 @@ std::int32_t XWindowsScreen::getJumpZoneSize() const
 
 bool XWindowsScreen::isAnyMouseButtonDown(std::uint32_t& buttonID) const
 {
-    (void) buttonID;
+	// Initialize to none
+	buttonID = kButtonNone;
 
 	// query the pointer to get the button state
 	Window root, window;
 	int xRoot, yRoot, xWindow, yWindow;
 	unsigned int state;
-    if (m_impl->XQueryPointer(m_display, m_root, &root, &window,
-								&xRoot, &yRoot, &xWindow, &yWindow, &state)) {
-		return ((state & (Button1Mask | Button2Mask | Button3Mask |
-							Button4Mask | Button5Mask)) != 0);
+	if (m_impl->XQueryPointer(m_display, m_root, &root, &window,
+							   &xRoot, &yRoot, &xWindow, &yWindow, &state)) {
+		if (state & Button1Mask) {
+			buttonID = kButtonLeft;
+		}
+		else if (state & Button2Mask) {
+			buttonID = kButtonMiddle;
+		}
+		else if (state & Button3Mask) {
+			buttonID = kButtonRight;
+		}
+		else if (state & Button4Mask) {
+			buttonID = kButtonExtra0;
+		}
+		else if (state & Button5Mask) {
+			buttonID = kButtonExtra1;
+		}
+
+		return buttonID != kButtonNone;
 	}
 
 	return false;
