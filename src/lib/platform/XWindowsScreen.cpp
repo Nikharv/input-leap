@@ -24,6 +24,7 @@
 #include "platform/XWindowsKeyState.h"
 #include "platform/XWindowsScreenSaver.h"
 #include "platform/XWindowsUtil.h"
+#include <X11/Xatom.h>
 #include "inputleap/Clipboard.h"
 #include "inputleap/KeyMap.h"
 #include "inputleap/XScreen.h"
@@ -177,6 +178,14 @@ XWindowsScreen::XWindowsScreen(
 	m_atomXdndSelection  = m_impl->XInternAtom(m_display, "XdndSelection", False);
 	m_atomText           = m_impl->XInternAtom(m_display, "text/plain", False);
 	m_atomUtf8String     = m_impl->XInternAtom(m_display, "text/uri-list", False);
+
+	// Advertise XDND awareness so other apps will send drag messages
+	Atom atomXdndAware = m_impl->XInternAtom(m_display, "XdndAware", False);
+	unsigned long xdndVersion = 5; // XDND protocol version
+	XChangeProperty(m_display, m_window, atomXdndAware, XA_ATOM,
+					32, PropModeReplace,
+					reinterpret_cast<unsigned char*>(&xdndVersion), 1);
+	LOG_DEBUG2("XDND: Set XdndAware on window 0x%lx", m_window);
 
 	// install event handlers
 	m_events->add_handler(EventType::SYSTEM, m_events->getSystemTarget(),
