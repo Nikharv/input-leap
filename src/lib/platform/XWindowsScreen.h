@@ -90,6 +90,7 @@ public:
     // Drag and drop support overrides
     bool isDraggingStarted() override;
     std::string& getDraggingFilename() override;
+    void clearDraggingFilename() override;
 
 protected:
     // IPlatformScreen overrides

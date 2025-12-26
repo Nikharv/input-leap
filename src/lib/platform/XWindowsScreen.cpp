@@ -2311,5 +2311,14 @@ XWindowsScreen::getDraggingFilename()
 	return m_xdndDragFilenames;
 }
 
+void
+XWindowsScreen::clearDraggingFilename()
+{
+	// Reset XDND drag state after processing
+	m_xdndDragFilenames.clear();
+	m_xdndDragActive = false;
+	m_xdndSourceWindow = None;
+}
+
 } // namespace inputleap
 
