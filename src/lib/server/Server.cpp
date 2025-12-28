@@ -89,7 +89,6 @@ Server::Server(
 	m_events(events),
 	m_sendFileThread(nullptr),
 	m_writeToDropDirThread(nullptr),
-	m_ignoreFileTransfer(false),
 	m_enableClipboard(true),
 	m_maximumClipboardSize(INT_MAX),
 	m_sendDragInfoThread(nullptr),
@@ -169,6 +168,9 @@ Server::Server(
 
 	// add connection
 	addClient(m_primaryClient);
+
+	// file transfer support is available through FileTransfer class
+	LOG_DEBUG("Server: file transfer support enabled");
 
 	// set initial configuration
 	setConfig(config);
@@ -1633,11 +1635,6 @@ Server::onMouseUp(ButtonID id)
 	// relay
 	m_active->mouseUp(id);
 
-	if (m_ignoreFileTransfer) {
-		m_ignoreFileTransfer = false;
-		return;
-	}
-
 	if (m_args.m_enableDragDrop) {
 		if (!m_screen->isOnScreen()) {
             std::string& file = m_screen->getDraggingFilename();
@@ -1770,9 +1767,7 @@ void Server::send_drag_info_thread(BaseClientProxy* newScreen)
 #if defined(__APPLE__)
 	// on mac it seems that after faking a LMB up, system would signal back
     // to InputLeap a mouse up event, which doesn't happen on windows. as a
-    // result, InputLeap would send dragging file to client twice. This variable
-	// is used to ignore the first file sending.
-	m_ignoreFileTransfer = true;
+    // result, InputLeap would send dragging file to client twice.
 #endif
 
 	// send drag file info to client if there is any
@@ -2246,5 +2241,6 @@ void Server::dragInfoReceived(std::uint32_t fileNum, std::string content)
 
 	m_screen->startDraggingFiles(m_fakeDragFileList);
 }
+
 
 } // namespace inputleap

@@ -34,6 +34,7 @@
 #include "base/String.h"
 #include "common/DataDirectories.h"
 #include "net/FingerprintDatabase.h"
+#include "net/FileTransfer.h"
 #include "net/SecureUtils.h"
 
 #include <QtCore>
@@ -45,6 +46,8 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QDesktopServices>
+#include <QInputDialog>
+#include <QLineEdit>
 #include <QRegularExpression>
 
 #if defined(Q_OS_MAC)
@@ -303,6 +306,7 @@ void MainWindow::createMenuBar()
 
     main_menu_->addAction(ui_->m_pActionShowLog);
     main_menu_->addAction(ui_->m_pActionSettings);
+    main_menu_->addAction(ui_->m_pActionSendFile);
     main_menu_->addAction(ui_->m_pActionMinimize);
     main_menu_->addSeparator();
 
@@ -343,6 +347,7 @@ void MainWindow::initConnections()
     connect(ui_->m_pActionStopCmdApp, &QAction::triggered, this, &MainWindow::stop_cmd_app);
     connect(ui_->m_pActionShowLog, &QAction::triggered, this, &MainWindow::showLogWindow);
     connect(ui_->m_pActionReload, &QAction::triggered, this, &MainWindow::restart_cmd_app);
+    connect(ui_->m_pActionSendFile, &QAction::triggered, this, &MainWindow::on_m_pActionSendFile_triggered);
     connect(ui_->m_pActionQuit, &QAction::triggered, qApp, &QCoreApplication::quit);
 }
 
@@ -411,6 +416,41 @@ void MainWindow::logError()
     if (cmd_app_process_)
     {
         appendLogRaw(cmd_app_process_->readAllStandardError());
+    }
+}
+
+void MainWindow::on_m_pActionSendFile_triggered()
+{
+    const QString filePath = QFileDialog::getOpenFileName(this, tr("Select file to send"));
+    if (filePath.isEmpty()) {
+        return;
+    }
+
+    const QString defaultUrl = QStringLiteral("ftp://127.0.0.1:2121/");
+    const QString remoteUrl = QInputDialog::getText(this,
+                                                    tr("Remote URL"),
+                                                    tr("Enter destination URL (ftp/sftp/http):"),
+                                                    QLineEdit::Normal,
+                                                    defaultUrl);
+    if (remoteUrl.isEmpty()) {
+        return;
+    }
+
+    const QString username = QInputDialog::getText(this, tr("Username"), tr("Optional"));
+    const QString password = QInputDialog::getText(this, tr("Password"), tr("Optional"), QLineEdit::Password);
+
+    inputleap::FileTransfer transfer;
+    const bool ok = transfer.uploadFile(filePath.toStdString(),
+                                        remoteUrl.toStdString(),
+                                        username.toStdString(),
+                                        password.toStdString());
+
+    if (ok) {
+        QMessageBox::information(this, tr("Send File"), tr("File uploaded successfully."));
+    }
+    else {
+        QMessageBox::warning(this, tr("Send File"),
+                             tr("Upload failed: %1").arg(QString::fromStdString(transfer.getLastError())));
     }
 }
 

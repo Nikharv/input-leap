@@ -84,3 +84,8 @@ target_link_libraries(integtests
 add_test(NAME integrationtests
          COMMAND integtests
          WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+# Standalone smoke harness for FileTransfer (libcurl-based)
+add_executable(filetransfer-smoke FileTransferSmoke.cpp)
+target_link_libraries(filetransfer-smoke
+    arch base client common io ipc mt net platform server synlib OpenSSL::SSL OpenSSL::Crypto)

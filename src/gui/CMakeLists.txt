@@ -192,6 +192,7 @@ include_directories (./src)
 
 target_link_libraries(input-leap
     net
+    base
     arch
     base
     io

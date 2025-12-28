@@ -36,6 +36,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <memory>
 
 namespace inputleap {
 
@@ -474,7 +475,6 @@ private:
     Thread* m_sendFileThread;
     Thread* m_writeToDropDirThread;
     std::string m_dragFileExt;
-    bool m_ignoreFileTransfer;
     bool m_enableClipboard;
     size_t m_maximumClipboardSize;
 

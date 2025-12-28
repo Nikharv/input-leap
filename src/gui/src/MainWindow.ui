@@ -469,6 +469,17 @@
     <string notr="true">F2</string>
    </property>
   </action>
+    <action name="m_pActionSendFile">
+     <property name="text">
+        <string>Send &amp;File...</string>
+     </property>
+     <property name="toolTip">
+        <string>Select a file to upload via configured endpoint</string>
+     </property>
+     <property name="shortcut">
+        <string notr="true"/>
+     </property>
+    </action>
   <action name="m_pActionReload">
    <property name="text">
     <string>&amp;Reload</string>

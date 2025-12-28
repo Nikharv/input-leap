@@ -256,6 +256,7 @@ if (APPLE OR WIN32)
     set(OPENSSL_USE_STATIC_LIBS TRUE)
 endif()
 find_package(OpenSSL 1.1.1 REQUIRED COMPONENTS SSL Crypto)
+find_package(CURL REQUIRED)
 #
 # Configure_file... but for directories, recursively.
 #

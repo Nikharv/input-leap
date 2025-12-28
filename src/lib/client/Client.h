@@ -217,6 +217,7 @@ private:
     ClientArgs m_args;
     bool m_enableClipboard;
     size_t m_maximumClipboardSize;
+    
 };
 
 } // namespace inputleap
