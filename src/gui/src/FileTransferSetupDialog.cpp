@@ -86,6 +86,21 @@ void FileTransferSetupDialog::accept()
         return;
     }
 
+    // Validate path format for SFTP
+    if (path.contains('~')) {
+        QMessageBox::warning(this, tr("File Transfer Setup"),
+                            tr("Path cannot contain '~'. Use absolute paths only.\n\n"
+                               "For example, instead of '~/Downloads', use '/Users/username/Downloads'"));
+        return;
+    }
+
+    if (!path.startsWith('/')) {
+        QMessageBox::warning(this, tr("File Transfer Setup"),
+                            tr("Path must be absolute and start with '/'\n\n"
+                               "For example: '/Users/username/uploads'"));
+        return;
+    }
+
     // Save settings to screen
     m_pScreen->setFileTransferIP(ip);
     m_pScreen->setFileTransferUsername(username);

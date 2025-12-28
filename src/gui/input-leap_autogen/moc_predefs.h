@@ -334,7 +334,7 @@
 #define __cpp_sized_deallocation 201309L
 #define __cpp_guaranteed_copy_elision 201606L
 #define __FLT64_HAS_QUIET_NAN__ 1
-#define INPUTLEAP_VERSION "3.0.3-'git-2025-12-27-d1221260'"
+#define INPUTLEAP_VERSION "3.0.3-'git-2025-12-27-2f743aae'"
 #define __FLT32_MIN_10_EXP__ (-37)
 #define __EXCEPTIONS 1
 #define __UINT16_C(c) c

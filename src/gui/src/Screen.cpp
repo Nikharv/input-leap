@@ -72,6 +72,12 @@ void Screen::loadSettings(QSettings& settings)
     readSettings<bool>(settings, switchCorners(), "switchCorner", false,
                        static_cast<int>(SwitchCorner::Count));
     readSettings<bool>(settings, fixes(), "fix", false, static_cast<int>(Fix::Count));
+
+    // Load file transfer settings
+    setFileTransferIP(settings.value("fileTransferIP", "").toString());
+    setFileTransferUsername(settings.value("fileTransferUsername", "").toString());
+    setFileTransferPassword(settings.value("fileTransferPassword", "").toString());
+    setFileTransferPath(settings.value("fileTransferPath", "").toString());
 }
 
 void Screen::saveSettings(QSettings& settings) const
@@ -87,6 +93,12 @@ void Screen::saveSettings(QSettings& settings) const
     writeSettings<int>(settings, modifiers(), "modifier");
     writeSettings<bool>(settings, switchCorners(), "switchCorner");
     writeSettings<bool>(settings, fixes(), "fix");
+
+    // Save file transfer settings
+    settings.setValue("fileTransferIP", fileTransferIP());
+    settings.setValue("fileTransferUsername", fileTransferUsername());
+    settings.setValue("fileTransferPassword", fileTransferPassword());
+    settings.setValue("fileTransferPath", fileTransferPath());
 }
 
 QTextStream& Screen::writeScreensSection(QTextStream& outStream) const

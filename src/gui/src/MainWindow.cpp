@@ -45,6 +45,7 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QDesktopServices>
 #include <QInputDialog>
 #include <QLineEdit>
@@ -426,6 +427,10 @@ void MainWindow::on_m_pActionSendFile_triggered()
         return;
     }
 
+    // Extract just the filename from the full path
+    QFileInfo fileInfo(filePath);
+    QString fileName = fileInfo.fileName();
+
     // Get list of configured clients with file transfer settings
     const auto& serverConfig = m_ServerConfig;
     QStringList configuredClients;
@@ -478,8 +483,14 @@ void MainWindow::on_m_pActionSendFile_triggered()
         }
 
         // Construct SFTP URL from screen's file transfer settings
-        remoteUrl = QString("sftp://%1%2")
-                    .arg(pScreen->fileTransferIP(), pScreen->fileTransferPath());
+        // SFTP requires full path including filename: sftp://IP/path/filename
+        QString remotePath = pScreen->fileTransferPath();
+        // Ensure path ends with / if it's a directory
+        if (!remotePath.endsWith('/')) {
+            remotePath += '/';
+        }
+        remoteUrl = QString("sftp://%1%2%3")
+                    .arg(pScreen->fileTransferIP(), remotePath, fileName);
         username = pScreen->fileTransferUsername();
         password = pScreen->fileTransferPassword();
     }

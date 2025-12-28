@@ -93,6 +93,47 @@ static size_t read_callback(void* ptr, size_t size, size_t nmemb, FILE* userp) {
     return fread(ptr, size, nmemb, userp);
 }
 
+// Callback for verbose debug output
+static int debug_callback(CURL* handle, curl_infotype type, char* data, size_t size, void* userp) {
+    (void)handle;
+    (void)userp;
+    
+    const char* text = "";
+    switch(type) {
+        case CURLINFO_TEXT:
+            text = "INFO";
+            break;
+        case CURLINFO_HEADER_OUT:
+            text = "HEADER_OUT";
+            break;
+        case CURLINFO_HEADER_IN:
+            text = "HEADER_IN";
+            break;
+        case CURLINFO_DATA_OUT:
+            text = "DATA_OUT";
+            break;
+        case CURLINFO_DATA_IN:
+            text = "DATA_IN";
+            break;
+        case CURLINFO_SSL_DATA_OUT:
+            text = "SSL_OUT";
+            break;
+        case CURLINFO_SSL_DATA_IN:
+            text = "SSL_IN";
+            break;
+        default:
+            return 0;
+    }
+    
+    std::string msg(data, size);
+    // Remove trailing newline for cleaner output
+    if (!msg.empty() && msg.back() == '\n') {
+        msg.pop_back();
+    }
+    ft_log("DEBUG", std::string(text) + ": " + msg);
+    return 0;
+}
+
 FileTransfer::FileTransfer()
 {
     // Initialize CURL and default config once per process
@@ -189,6 +230,9 @@ bool FileTransfer::uploadFile(const std::string& localPath,
         return false;
     }
 
+    // Log the attempted URL for debugging
+    ft_log("INFO", std::string("Uploading to: ") + remotePath);
+    
     // Set CURL options
     curl_easy_setopt(curl, CURLOPT_URL, remotePath.c_str());
     curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
@@ -199,11 +243,26 @@ bool FileTransfer::uploadFile(const std::string& localPath,
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, m_transferTimeout);
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
     curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
+    
+    // Enable verbose mode to see SSH handshake details
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, debug_callback);
+
+    // For SFTP: Accept any SSH host key without verification
+    // This allows password-based auth to untrusted hosts
+    // The hostkey doesn't need to be known in advance
+    curl_easy_setopt(curl, CURLOPT_SSH_KNOWNHOSTS, 0);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
     // Set authentication if provided
     if (!username.empty() && !password.empty()) {
         std::string auth = username + ":" + password;
+        ft_log("INFO", std::string("Using username: ") + username);
         curl_easy_setopt(curl, CURLOPT_USERPWD, auth.c_str());
+        
+        // Force password auth for SFTP (some systems need this)
+        curl_easy_setopt(curl, CURLOPT_SSH_AUTH_TYPES, CURLSSH_AUTH_PASSWORD);
     }
 
     // Perform the transfer
