@@ -39,4 +39,4 @@ enum qIpcClientType {
 extern const char*        kIpcMsgHello;
 extern const char*        kIpcMsgLogLine;
 extern const char*        kIpcMsgCommand;
-extern const char*        kIpcMsgShutdown;
+extern const char*        kIpcMsgShutdown;extern const char*        kIpcMsgFileTransferInfo;

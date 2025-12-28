@@ -26,6 +26,7 @@ enum EIpcMessage {
     kIpcLogLine,
     kIpcCommand,
     kIpcShutdown,
+    kIpcFileTransferInfo,
 };
 
 enum EIpcClientType {

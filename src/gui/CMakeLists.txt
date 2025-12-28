@@ -30,6 +30,7 @@ set(GUI_SOURCE_FILES
     src/BaseConfig.cpp
     src/CommandProcess.cpp
     src/DataDownloader.cpp
+    src/FileTransferSetupDialog.cpp
     src/FingerprintAcceptDialog.cpp
     src/HotkeyDialog.cpp
     src/IpcClient.cpp
@@ -70,6 +71,7 @@ set(GUI_HEADER_FILES
     src/CommandProcess.h
     src/DataDownloader.h
     src/ElevateMode.h
+    src/FileTransferSetupDialog.h
     src/HotkeyDialog.h
     src/IpcClient.h
     src/Ipc.h
@@ -103,6 +105,7 @@ set(GUI_UI_FILES
     src/AboutDialog.ui
     src/ActionDialog.ui
     src/AddClientDialog.ui
+    src/FileTransferSetupDialog.ui
     src/FingerprintAcceptDialog.ui
     src/HotkeyDialog.ui
     src/LogWindow.ui

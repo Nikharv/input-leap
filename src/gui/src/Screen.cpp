@@ -147,19 +147,27 @@ QDataStream& operator<<(QDataStream& outStream, const Screen& screen)
         << modifiers
         << screen.switchCorners()
         << screen.fixes()
+        << screen.fileTransferIP()
+        << screen.fileTransferUsername()
+        << screen.fileTransferPassword()
+        << screen.fileTransferPath()
         ;
 }
 
 QDataStream& operator>>(QDataStream& inStream, Screen& screen)
 {
     QList<int> modifiers;
-    return inStream
+    inStream
         >> screen.m_Name
         >> screen.m_SwitchCornerSize
         >> screen.m_Aliases
         >> modifiers
         >> screen.m_SwitchCorners
         >> screen.m_Fixes
+        >> screen.m_FileTransferIP
+        >> screen.m_FileTransferUsername
+        >> screen.m_FileTransferPassword
+        >> screen.m_FileTransferPath
         ;
 
     screen.m_Modifiers.clear();

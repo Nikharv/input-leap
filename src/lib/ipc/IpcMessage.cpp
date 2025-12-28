@@ -70,4 +70,18 @@ IpcCommandMessage::~IpcCommandMessage()
 {
 }
 
+IpcFileTransferInfoMessage::IpcFileTransferInfoMessage(const std::string& hostName,
+                                                       const std::string& userName,
+                                                       const std::string& uploadPath) :
+    IpcMessage(kIpcFileTransferInfo),
+    m_hostName(hostName),
+    m_userName(userName),
+    m_uploadPath(uploadPath)
+{
+}
+
+IpcFileTransferInfoMessage::~IpcFileTransferInfoMessage()
+{
+}
+
 } // namespace inputleap

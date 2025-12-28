@@ -103,6 +103,21 @@ class AppConfig: public QObject
 
         void saveSettings();
 
+        // File transfer peer info
+        struct PeerFileTransferInfo {
+            QString screenName;
+            QString hostName;
+            QString userName;
+            QString uploadPath;
+        };
+
+        void setPeerFileTransferInfo(const QString& peerName,
+                                      const QString& hostName,
+                                      const QString& userName,
+                                      const QString& uploadPath);
+        PeerFileTransferInfo peerFileTransferInfo(const QString& peerName) const;
+        QStringList connectedPeers() const;
+
 protected:
         QSettings& settings();
         void setScreenName(const QString& s);
@@ -137,6 +152,7 @@ protected:
         bool m_AutoHide;
         bool m_AutoStart;
         bool m_MinimizeToTray;
+        std::map<QString, PeerFileTransferInfo> m_peerFileTransferInfo;
 
         static const char server_name_[];
         static const char client_name_[];

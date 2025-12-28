@@ -20,6 +20,7 @@
 #include "ui_ScreenSettingsDialog.h"
 
 #include "Screen.h"
+#include "FileTransferSetupDialog.h"
 
 #include <QtCore>
 #include <QtGui>
@@ -170,6 +171,12 @@ void ScreenSettingsDialog::on_m_pButtonRemoveAlias_clicked()
 void ScreenSettingsDialog::on_m_pListAliases_itemSelectionChanged()
 {
     ui_->m_pButtonRemoveAlias->setEnabled(!ui_->m_pListAliases->selectedItems().isEmpty());
+}
+
+void ScreenSettingsDialog::on_m_pButtonFileTransferSetup_clicked()
+{
+    FileTransferSetupDialog dlg(this, m_pScreen);
+    dlg.exec();
 }
 
 ScreenSettingsDialog::~ScreenSettingsDialog() = default;

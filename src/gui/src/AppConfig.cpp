@@ -243,3 +243,34 @@ bool AppConfig::getAutoStart() { return m_AutoStart; }
 void AppConfig::setMinimizeToTray(bool b) { m_MinimizeToTray = b; }
 
 bool AppConfig::getMinimizeToTray() { return m_MinimizeToTray; }
+
+void AppConfig::setPeerFileTransferInfo(const QString& peerName,
+                                        const QString& hostName,
+                                        const QString& userName,
+                                        const QString& uploadPath)
+{
+    AppConfig::PeerFileTransferInfo info;
+    info.screenName = peerName;
+    info.hostName = hostName;
+    info.userName = userName;
+    info.uploadPath = uploadPath;
+    m_peerFileTransferInfo[peerName] = info;
+}
+
+AppConfig::PeerFileTransferInfo AppConfig::peerFileTransferInfo(const QString& peerName) const
+{
+    auto it = m_peerFileTransferInfo.find(peerName);
+    if (it != m_peerFileTransferInfo.end()) {
+        return it->second;
+    }
+    return AppConfig::PeerFileTransferInfo();
+}
+
+QStringList AppConfig::connectedPeers() const
+{
+    QStringList peers;
+    for (const auto& pair : m_peerFileTransferInfo) {
+        peers.append(pair.first);
+    }
+    return peers;
+}

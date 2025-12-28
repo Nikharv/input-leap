@@ -70,6 +70,18 @@ class Screen : public BaseConfig
         QString& name() { return m_Name; }
         void setName(const QString& name) { m_Name = name; }
 
+        // File transfer configuration
+        const QString& fileTransferIP() const { return m_FileTransferIP; }
+        const QString& fileTransferUsername() const { return m_FileTransferUsername; }
+        const QString& fileTransferPassword() const { return m_FileTransferPassword; }
+        const QString& fileTransferPath() const { return m_FileTransferPath; }
+        bool fileTransferEnabled() const { return !m_FileTransferIP.isEmpty(); }
+
+        void setFileTransferIP(const QString& ip) { m_FileTransferIP = ip; }
+        void setFileTransferUsername(const QString& username) { m_FileTransferUsername = username; }
+        void setFileTransferPassword(const QString& password) { m_FileTransferPassword = password; }
+        void setFileTransferPath(const QString& path) { m_FileTransferPath = path; }
+
     protected:
         void init();
         QPixmap* pixmap() { return &m_Pixmap; }
@@ -97,6 +109,12 @@ class Screen : public BaseConfig
         QList<bool> m_Fixes;
 
         bool m_Swapped;
+
+        // File transfer configuration
+        QString m_FileTransferIP;
+        QString m_FileTransferUsername;
+        QString m_FileTransferPassword;
+        QString m_FileTransferPath;
 };
 
 QDataStream& operator<<(QDataStream& outStream, const Screen& screen);

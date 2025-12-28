@@ -86,4 +86,26 @@ private:
     bool m_elevate;
 };
 
+class IpcFileTransferInfoMessage : public IpcMessage {
+public:
+    IpcFileTransferInfoMessage(const std::string& hostName,
+                                const std::string& userName,
+                                const std::string& uploadPath);
+    virtual ~IpcFileTransferInfoMessage();
+
+    //! Gets the peer hostname/IP.
+    std::string hostName() const { return m_hostName; }
+
+    //! Gets the peer username for SFTP login.
+    std::string userName() const { return m_userName; }
+
+    //! Gets the peer upload folder path.
+    std::string uploadPath() const { return m_uploadPath; }
+
+private:
+    std::string m_hostName;
+    std::string m_userName;
+    std::string m_uploadPath;
+};
+
 } // namespace inputleap

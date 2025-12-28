@@ -46,6 +46,7 @@ class ScreenSettingsDialog : public QDialog
         void on_m_pButtonRemoveAlias_clicked();
         void on_m_pLineEditAlias_textChanged(const QString& text);
         void on_m_pListAliases_itemSelectionChanged();
+        void on_m_pButtonFileTransferSetup_clicked();
 
     private:
         std::unique_ptr<Ui::ScreenSettingsDialog> ui_;

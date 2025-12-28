@@ -123,6 +123,37 @@ void IpcClient::sendCommand(const QString& command, ElevateMode const elevate)
     stream.writeRawData(elevateBuf, 1);
 }
 
+void IpcClient::sendFileTransferInfo(const QString& hostName, const QString& userName, const QString& uploadPath)
+{
+    QDataStream stream(m_Socket);
+
+    stream.writeRawData(kIpcMsgFileTransferInfo, 4);
+
+    // Send host name
+    std::string stdHostName = hostName.toStdString();
+    const char* charHostName = stdHostName.c_str();
+    int hostNameLength = static_cast<int>(strlen(charHostName));
+    char lenBuf[4];
+    intToBytes(hostNameLength, lenBuf, 4);
+    stream.writeRawData(lenBuf, 4);
+    stream.writeRawData(charHostName, hostNameLength);
+
+    // Send user name
+    std::string stdUserName = userName.toStdString();
+    const char* charUserName = stdUserName.c_str();
+    int userNameLength = static_cast<int>(strlen(charUserName));
+    intToBytes(userNameLength, lenBuf, 4);
+    stream.writeRawData(lenBuf, 4);
+    stream.writeRawData(charUserName, userNameLength);
+
+    // Send upload path
+    std::string stdUploadPath = uploadPath.toStdString();
+    const char* charUploadPath = stdUploadPath.c_str();
+    int uploadPathLength = static_cast<int>(strlen(charUploadPath));
+    intToBytes(uploadPathLength, lenBuf, 4);
+    stream.writeRawData(lenBuf, 4);
+    stream.writeRawData(charUploadPath, uploadPathLength);
+}
 void IpcClient::handleReadLogLine(const QString& text)
 {
     Q_EMIT readLogLine(text);

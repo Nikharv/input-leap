@@ -426,18 +426,63 @@ void MainWindow::on_m_pActionSendFile_triggered()
         return;
     }
 
-    const QString defaultUrl = QStringLiteral("ftp://127.0.0.1:2121/");
-    const QString remoteUrl = QInputDialog::getText(this,
-                                                    tr("Remote URL"),
-                                                    tr("Enter destination URL (ftp/sftp/http):"),
-                                                    QLineEdit::Normal,
-                                                    defaultUrl);
-    if (remoteUrl.isEmpty()) {
-        return;
+    // Get list of configured clients with file transfer settings
+    const auto& serverConfig = m_ServerConfig;
+    QStringList configuredClients;
+    QMap<QString, const Screen*> clientScreens;
+
+    // Search through server config for screens with file transfer enabled
+    for (const auto& screen : serverConfig.screens()) {
+        if (screen.fileTransferEnabled()) {
+            configuredClients.append(screen.name());
+            clientScreens[screen.name()] = &screen;
+        }
     }
 
-    const QString username = QInputDialog::getText(this, tr("Username"), tr("Optional"));
-    const QString password = QInputDialog::getText(this, tr("Password"), tr("Optional"), QLineEdit::Password);
+    QString remoteUrl;
+    QString username;
+    QString password;
+
+    if (configuredClients.isEmpty()) {
+        // No file transfer configured, show manual URL entry
+        const QString defaultUrl = QStringLiteral("sftp://127.0.0.1/");
+        remoteUrl = QInputDialog::getText(this,
+                                          tr("Remote URL"),
+                                          tr("Enter destination URL (sftp/ftp/http):"),
+                                          QLineEdit::Normal,
+                                          defaultUrl);
+        if (remoteUrl.isEmpty()) {
+            return;
+        }
+        username = QInputDialog::getText(this, tr("Username"), tr("Optional"));
+        password = QInputDialog::getText(this, tr("Password"), tr("Optional"), QLineEdit::Password);
+    } else {
+        // Show configured clients for selection
+        bool ok = false;
+        QString selectedClient = QInputDialog::getItem(this,
+                                                       tr("Send File to Client"),
+                                                       tr("Choose destination client:"),
+                                                       configuredClients,
+                                                       0,
+                                                       false,
+                                                       &ok);
+        if (!ok || selectedClient.isEmpty()) {
+            return;
+        }
+
+        // Get screen configuration for selected client
+        const Screen* pScreen = clientScreens[selectedClient];
+        if (!pScreen) {
+            QMessageBox::warning(this, tr("Send File"), tr("Client configuration not found."));
+            return;
+        }
+
+        // Construct SFTP URL from screen's file transfer settings
+        remoteUrl = QString("sftp://%1%2")
+                    .arg(pScreen->fileTransferIP(), pScreen->fileTransferPath());
+        username = pScreen->fileTransferUsername();
+        password = pScreen->fileTransferPassword();
+    }
 
     inputleap::FileTransfer transfer;
     const bool ok = transfer.uploadFile(filePath.toStdString(),

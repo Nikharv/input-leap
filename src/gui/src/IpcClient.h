@@ -36,6 +36,7 @@ public:
 
     void sendHello();
     void sendCommand(const QString& command, ElevateMode elevate);
+    void sendFileTransferInfo(const QString& hostName, const QString& userName, const QString& uploadPath);
     void connectToHost();
     void disconnectFromHost();
 
